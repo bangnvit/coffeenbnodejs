@@ -1,4 +1,4 @@
-import {initializeApp, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getMessaging } from "firebase-admin/messaging";
 import express, { json } from "express";
 import cors from "cors";
@@ -58,7 +58,7 @@ app.post("/send", function (req, res) {
       console.log("Error sending message:", error);
     });
   
-  
+    
 });
 
 app.listen(3000, function () {
