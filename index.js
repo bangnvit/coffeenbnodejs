@@ -1,10 +1,13 @@
-import { initializeApp, applicationDefault } from "firebase-admin/app";
+import { initializeApp} from "firebase-admin/app";
+// import { applicationDefault } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
-import express, { json } from "express";
+import express from "express";
 import cors from "cors";
 
 
-process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+// process.env.GOOGLE_APPLICATION_CREDENTIALS;
+const serviceAccount = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS));
 
 const app = express();
 app.use(express.json());
@@ -28,8 +31,11 @@ app.use(function(req, res, next) {
 
 
 initializeApp({
-  credential: applicationDefault(),
-  projectId: 'cafeorder-f666',
+  // credential: applicationDefault(),
+  // projectId: 'cafeorder-f666',
+  projectId: serviceAccount.project_id,
+    clientEmail: serviceAccount.client_email,
+    privateKey: serviceAccount.private_key
 });
 
 app.post("/send", function (req, res) {
