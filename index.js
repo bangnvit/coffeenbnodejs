@@ -9,9 +9,9 @@ app.use(cors());
 
 const serviceAccount = require(process.env.GOOGLE_APPLICATION_CREDENTIALS);
 
-// console.log("projectId: ", serviceAccount.project_id);
-// console.log("clientEmail: ", serviceAccount.client_email);
-// console.log("privateKey: ", serviceAccount.private_key);
+console.log("projectId: ", serviceAccount.project_id);
+console.log("clientEmail: ", serviceAccount.client_email);
+console.log("privateKey: ", serviceAccount.private_key);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -25,7 +25,8 @@ app.post("/send", function (req, res) {
       title: "Notification",
       body: 'This is a Test Notification'
     },
-    token: receivedToken
+    // token: receivedToken
+    token: "f6UaBpO-TGaFxOD3RN5G3U:APA91bERokUDEaFIjCYWdLyR0BXq5Iz0Z8Hh_CBQhqbV58X-TBVZH401vpXZOWDeuiKCPAp_uu_XPfdyPOIge7PTcYe7GxJKxZK0lT2T7IJraKz3pQsY2Et5SEe40yioZiV4AZxz7GdI"
   };
   
   admin.messaging()
@@ -43,6 +44,6 @@ app.post("/send", function (req, res) {
     });
 });
 
-app.listen(3000, function () {
-  console.log("Server started on port 3000");
+app.listen(3008, function () {
+  console.log("Server started on port 3008");
 });
