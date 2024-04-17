@@ -25,7 +25,7 @@ app.post("/send", function (req, res) {
       title: "Notification",
       body: 'This is a Test Notification'
     },
-    token: receivedToken // Đây là token FCM bạn muốn gửi thông báo đến
+    token: receivedToken
   };
   
   admin.messaging()
