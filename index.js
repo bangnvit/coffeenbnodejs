@@ -3,12 +3,7 @@ import { initializeApp} from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import express from "express";
 import cors from "cors";
-import fs from "fs";
 
-
-
-// process.env.GOOGLE_APPLICATION_CREDENTIALS;
-const serviceAccount = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS));
 
 const app = express();
 app.use(express.json());
@@ -30,6 +25,9 @@ app.use(function(req, res, next) {
   next();
 });
 
+const serviceAccount = JSON.parse(
+  process.env.GOOGLE_APPLICATION_CREDENTIALS
+);
 
 initializeApp({
   // credential: applicationDefault(),
