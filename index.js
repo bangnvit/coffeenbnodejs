@@ -1,42 +1,19 @@
-import { initializeApp} from "firebase-admin/app";
-// import { applicationDefault } from "firebase-admin/app";
-import { getMessaging } from "firebase-admin/messaging";
-import express from "express";
-import cors from "cors";
-import dotenv from 'dotenv';
-dotenv.config();
-
+const admin = require("firebase-admin");
+const express = require("express");
+const cors = require("cors");
+require('dotenv').config();
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
-app.use(
-  cors({
-    origin: "*",
-  })
-);
+const serviceAccount = require(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+// console.log("projectId: ", serviceAccount.project_id);
+// console.log("clientEmail: ", serviceAccount.client_email);
+// console.log("privateKey: ", serviceAccount.private_key);
 
-app.use(
-  cors({
-    methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"],
-  })
-);
-
-app.use(function(req, res, next) {
-  res.setHeader("Content-Type", "application/json");
-  next();
-});
-
-const serviceAccount = JSON.parse(
-  process.env.GOOGLE_APPLICATION_CREDENTIALS
-);
-
-initializeApp({
-  // credential: applicationDefault(),
-  // projectId: 'cafeorder-f666',
-  projectId: serviceAccount.project_id,
-    clientEmail: serviceAccount.client_email,
-    privateKey: serviceAccount.private_key
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
 });
 
 app.post("/send", function (req, res) {
@@ -47,10 +24,10 @@ app.post("/send", function (req, res) {
       title: "Notification",
       body: 'This is a Test Notification'
     },
-    token: "f6UaBpO-TGaFxOD3RN5G3U:APA91bERokUDEaFIjCYWdLyR0BXq5Iz0Z8Hh_CBQhqbV58X-TBVZH401vpXZOWDeuiKCPAp_uu_XPfdyPOIge7PTcYe7GxJKxZK0lT2T7IJraKz3pQsY2Et5SEe40yioZiV4AZxz7GdI"
+    token: receivedToken // Đây là token FCM bạn muốn gửi thông báo đến
   };
   
-  getMessaging()
+  admin.messaging()
     .send(message)
     .then((response) => {
       res.status(200).json({
@@ -60,12 +37,9 @@ app.post("/send", function (req, res) {
       console.log("Successfully sent message:", response);
     })
     .catch((error) => {
-      res.status(400);
-      res.send(error);
+      res.status(400).json({ error: error.message });
       console.log("Error sending message:", error);
     });
-  
-    
 });
 
 app.listen(3200, function () {
