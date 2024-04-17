@@ -1,16 +1,13 @@
 const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors");
-// require('dotenv').config();
+require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// $env:GOOGLE_APPLICATION_CREDENTIALS="D:\Mobile\KotlinAndroid\DATN\coffeenbnode\cafeorder-f666-firebase-adminsdk-zanc5-03db1fdb0e.json"
-
-// const serviceAccount = require("D:\Mobile\KotlinAndroid\DATN\coffeenbnode\cafeorder-f666-firebase-adminsdk-zanc5-03db1fdb0e.json");
-const serviceAccount = require("D:\\Mobile\\KotlinAndroid\\DATN\\coffeenbnode\\cafeorder-f666-firebase-adminsdk-zanc5-03db1fdb0e.json");
+const serviceAccount = require(process.env.GOOGLE_APPLICATION_CREDENTIALS);
 
 // console.log("projectId: ", serviceAccount.project_id);
 // console.log("clientEmail: ", serviceAccount.client_email);
