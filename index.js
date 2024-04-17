@@ -27,19 +27,17 @@ app.use(function(req, res, next) {
   next();
 });
 
-console.log("GOOGLE_APPLICATION_CREDENTIALS:", process.env.GOOGLE_APPLICATION_CREDENTIALS);
+const serviceAccount = JSON.parse(
+  process.env.GOOGLE_APPLICATION_CREDENTIALS
+);
 
-// const serviceAccount = JSON.parse(
-//   process.env.GOOGLE_APPLICATION_CREDENTIALS
-// );
-
-// initializeApp({
-//   // credential: applicationDefault(),
-//   // projectId: 'cafeorder-f666',
-//   projectId: serviceAccount.project_id,
-//     clientEmail: serviceAccount.client_email,
-//     privateKey: serviceAccount.private_key
-// });
+initializeApp({
+  // credential: applicationDefault(),
+  // projectId: 'cafeorder-f666',
+  projectId: serviceAccount.project_id,
+    clientEmail: serviceAccount.client_email,
+    privateKey: serviceAccount.private_key
+});
 
 app.post("/send", function (req, res) {
   const receivedToken = req.body.fcmToken;
