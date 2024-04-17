@@ -3,6 +3,8 @@ import { initializeApp} from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import express from "express";
 import cors from "cors";
+import dotenv from 'dotenv';
+dotenv.config();
 
 
 const app = express();
@@ -25,17 +27,19 @@ app.use(function(req, res, next) {
   next();
 });
 
-const serviceAccount = JSON.parse(
-  process.env.GOOGLE_APPLICATION_CREDENTIALS
-);
+console.log("GOOGLE_APPLICATION_CREDENTIALS:", process.env.GOOGLE_APPLICATION_CREDENTIALS);
 
-initializeApp({
-  // credential: applicationDefault(),
-  // projectId: 'cafeorder-f666',
-  projectId: serviceAccount.project_id,
-    clientEmail: serviceAccount.client_email,
-    privateKey: serviceAccount.private_key
-});
+// const serviceAccount = JSON.parse(
+//   process.env.GOOGLE_APPLICATION_CREDENTIALS
+// );
+
+// initializeApp({
+//   // credential: applicationDefault(),
+//   // projectId: 'cafeorder-f666',
+//   projectId: serviceAccount.project_id,
+//     clientEmail: serviceAccount.client_email,
+//     privateKey: serviceAccount.private_key
+// });
 
 app.post("/send", function (req, res) {
   const receivedToken = req.body.fcmToken;
