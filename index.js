@@ -149,7 +149,7 @@ app.post("/api/order_refuse", function (req, res) {
           token: token,
           notification: {
             title: "Đơn hàng đã bị từ chối",
-            body: "Đơn hàng ID " + orderId + " đã bị từ chối"
+            body: "Đơn hàng ID " + orderId + " đã bị từ chối.\nLý do: "+ reason
           },
           data: {
             typeFor: "2",
