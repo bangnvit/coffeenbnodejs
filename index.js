@@ -2,12 +2,11 @@ const admin = require("firebase-admin");
 const express = require("express");
 const cors = require("cors");
 require('dotenv').config();
-
-// them
+const url = require('url');
+const querystring = require('querystring');
 const crypto = require('crypto');
 const axios = require('axios');
 const port = 3006;
-//
 
 const app = express();
 app.use(express.json());
@@ -24,6 +23,7 @@ admin.initializeApp({
 
 // Endpoint cho người dùng post lên
 app.post("/api/order_new", function (req, res) {
+  console.log("================order_new=================")
   // Lấy thông tin từ request của người dùng
   const { userEmail, orderId } = req.body;
 
@@ -331,24 +331,39 @@ function getUserTokensFromFirebase() {
   });
 }
 
+app.get("/success", (req, res) => {
+  return res.status(200).json({
+      message: "Success"
+  })
+})
+
 // Testing...
-app.post("/api/checkout_momo", async (req, res) => {
+app.post("/api/momo_qr", async (req, res) => {
+
+  console.log("================momo_qr=================")
+  const { orderId, totalPrice} = req.body;
+  // const { totalPrice } = req.body;
+
   const accessKey = 'F8BBA842ECF85';
   const secretKey = 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
   const orderInfo = 'Pay with MoMo';
   const partnerCode = 'MOMO';
-  const redirectUrl = 'http://localhost:3006/success';
-  const ipnUrl = 'http://localhost:3006/success';
-  const requestType = "payWithATM";
-  const amount = '10000';
-  const orderId = partnerCode + new Date().getTime();
-  const requestId = orderId;
+  const redirectUrl = 'http://192.168.0.101:3006/api/redirectUrl/result';
+  const ipnUrl = 'http://192.168.0.101:3006/api/ipnUrl/result';
+  // const requestType = "payWithATM"; // Thanh toán bằng thẻ ATM
+  const requestType = "captureWallet"; // Quét mã QR bằng momo
+  const amount = totalPrice;
+  const newOrderId = 'MM' + orderId; // lấy từ req.body rồi
+  const requestId = newOrdearId;
+  console.log("totalPrice: ", totalPrice)
+  console.log("orderId posted: ", orderId)
+  console.log("newOrderId: ", newOrderId)
   const extraData = '';
   const paymentCode = 'T8Qii53fAXyUftPV3m9ysyRhEanUs9KlOPfHgpMR0ON50U10Bh+vZdpJU7VY4z+Z2y77fJHkoDc69scwwzLuW5MzeUKTwPo3ZMaB29imm6YulqnWfTkgzqRaion+EuD7FN9wZ4aXE1+mRt0gHsU193y+yxtRgpmY7SDMU9hCKoQtYyHsfFR5FUAOAKMdw2fzQqpToei3rnaYvZuYaxolprm9+/+WIETnPUDlxCYOiw7vPeaaYQQH0BF0TxyU3zu36ODx980rJvPAgtJzH1gUrlxcSS1HQeQ9ZaVM1eOK/jl8KJm6ijOwErHGbgf/hVymUQG65rHU2MWz9U8QUjvDWA==';
   const orderGroupId = '';
   const autoCapture = true;
   const lang = 'vi';
-  const rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType;
+  const rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + newOrderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType;
   const signature = crypto.createHmac('sha256', secretKey)
       .update(rawSignature)
       .digest('hex');
@@ -358,7 +373,7 @@ app.post("/api/checkout_momo", async (req, res) => {
       storeId: "MomoTestStore",
       requestId: requestId,
       amount: amount,
-      orderId: orderId,
+      orderId: newOrderId,
       orderInfo: orderInfo,
       redirectUrl: redirectUrl,
       ipnUrl: ipnUrl,
@@ -370,15 +385,104 @@ app.post("/api/checkout_momo", async (req, res) => {
       signature: signature
   };
   const response = await axios.post("https://test-payment.momo.vn/v2/gateway/api/create", requestBody)
-  return res.redirect(response.data.payUrl);
+  console.log(response.data);
+  console.log("----------------------");
+  // return res.redirect(response.data.payUrl);
+  return res.redirect(response.data.qrCodeUrl);
+
+  // return res.status(200).json(response.data);
+});
+
+// MoMo đã thanh toán xong trả về, dựa vào resultCode = 0 (thành công) để:
+// Sửa status đơn orderId
+// lấy email từ orderId, tự động post cái đơn mới 
+app.get("/api/redirectUrl/result", (req, res) => {
+  const requestUrl = req.url; // Lấy URL từ request
+  console.log("result-requestUrl: ", requestUrl);
+  const myURL = new URL('http://192.168.0.101:3006' + requestUrl); // Tạo một đối tượng URL
+  console.log("result-myURL: ", myURL);
+
+  const searchParams = myURL.searchParams; // Lấy các tham số truy vấn của URL
+  console.log("result-searchParams: ", searchParams);
+  const resultCode = searchParams.get('resultCode'); // Lấy giá trị của 'resultCode' từ query params
+  console.log("result-resultCode: ", resultCode);
+  const orderIdGeted = searchParams.get('orderId');
+  console.log("result-orderIdGeted: ", orderIdGeted);
+  let orderIdNumber = orderIdGeted.substring(2); // Lấy từ vị trí thứ 2 trở đi
+
+  console.log(orderIdNumber); // Ví dụ orderIdGeted = "MM1714113143666" => orderIdNumber ="1714113143666" (cấu trúc MM + OrderID từ app)
+
+  if(resultCode == 0) {
+    const bookingRef = admin.database().ref("booking");
+    // Sửa trạng thái trên Firebase Realtime Database: Trong node "booking" có id node con là orderIdNumber, hãy sửa "status" = 30 cho node có id orderIdNumber.
+    bookingRef.child(orderIdNumber).update({
+        status: 30
+    }, (error) => {
+        if (error) {
+            // Xử lý lỗi nếu có
+            console.log("Error updating status: ", error);
+        } else {
+            // Thành công
+            console.log("Status updated successfully.");
+
+            // Lấy Email từ mã đơn hàng và gửi thông báo đến admin về đơn hàng mới
+            bookingRef.once('value', (snapshot) => {
+              snapshot.forEach((childSnapshot) => {
+                  // Lấy id của mỗi nút con
+                  const bookingId = childSnapshot.key;
+          
+                  // Kiểm tra xem orderIdNumber trùng với id của nút con không
+                  if (orderIdNumber === bookingId) {
+                      // Nếu trùng, lấy dữ liệu của nút con
+                      const bookingData = childSnapshot.val();
+          
+                      // Kiểm tra xem có tồn tại trường email trong dữ liệu của nút con không
+                      if (bookingData && bookingData.email) {
+                          // Nếu tồn tại, lấy địa chỉ email
+                          const email = bookingData.email;
+          
+                          // Tiếp tục xử lý với địa chỉ email này, ví dụ gửi thông báo đến admin
+                          const adminNotiNewOrderEndpoint = "http://192.168.0.101:3006/api/order_new";
+                          const requestBody = {
+                              userEmail: email,
+                              orderId: orderIdNumber
+                          };
+          
+                          // Gửi yêu cầu POST đến endpoint
+                          axios.post(adminNotiNewOrderEndpoint, requestBody)
+                              .then(response => {
+                                  console.log("Notification sent to admin successfully");
+                              })
+                              .catch(error => {
+                                  console.error("Error sending notification to admin:", error);
+                              });
+                      } else {
+                          console.error("Email not found in booking data");
+                      }
+          
+                      // Kết thúc vòng lặp nếu đã tìm thấy orderIdNumber trong danh sách booking
+                      return true;
+                  }
+              });
+          });
+
+
+        }
+    });
+  }
+  
+  return res.status(200).json({
+      message: "RedirectUrl Success"
+  })
 });
 
 
-app.get("/success", (req, res) => {
+app.get("/api/ipnUrl/result", (req, res) => {
   return res.status(200).json({
-      message: "Success"
+      message: "IpnUrl Success"
   })
 })
+
 
 app.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
