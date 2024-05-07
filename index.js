@@ -447,7 +447,7 @@ app.get("/api/redirectUrl/success", (req, res) => {
                       },
                       data: {
                         typeFor: "1",
-                        email: userEmail,
+                        email: email,
                         orderId: orderId
                       }
                     }
