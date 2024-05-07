@@ -36,7 +36,7 @@ app.post("/api/order_new", function (req, res) {
           token: token,
           notification: {
             title: "Đơn hàng mới",
-            body: "Bạn có đơn hàng mới,\nID " + orderId + "\nNgười đặt: " + userEmail
+            body: "Bạn có đơn hàng mới,\nID " + orderId
           },
           data: {
             typeFor: "1",
@@ -347,14 +347,14 @@ app.post("/api/momo_qr", async (req, res) => {
   const accessKey = 'F8BBA842ECF85';
   const secretKey = 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
   const orderInfo = 'Pay with MoMo';
-  const partnerCode = 'MOMO';
+  const partnerCode = 'MoMo';
   const redirectUrl = 'http://192.168.0.101:3006/api/redirectUrl/result';
   const ipnUrl = 'http://192.168.0.101:3006/api/ipnUrl/result';
   // const requestType = "payWithATM"; // Thanh toán bằng thẻ ATM
   const requestType = "captureWallet"; // Quét mã QR bằng momo
   const amount = totalPrice;
   const newOrderId = 'MM' + orderId; // lấy từ req.body rồi
-  const requestId = newOrdearId;
+  const requestId = newOrderId;
   console.log("totalPrice: ", totalPrice)
   console.log("orderId posted: ", orderId)
   console.log("newOrderId: ", newOrderId)
@@ -396,88 +396,110 @@ app.post("/api/momo_qr", async (req, res) => {
 // MoMo đã thanh toán xong trả về, dựa vào resultCode = 0 (thành công) để:
 // Sửa status đơn orderId
 // lấy email từ orderId, tự động post cái đơn mới 
-app.get("/api/redirectUrl/result", (req, res) => {
-  const requestUrl = req.url; // Lấy URL từ request
-  console.log("result-requestUrl: ", requestUrl);
-  const myURL = new URL('http://192.168.0.101:3006' + requestUrl); // Tạo một đối tượng URL
-  console.log("result-myURL: ", myURL);
 
-  const searchParams = myURL.searchParams; // Lấy các tham số truy vấn của URL
-  console.log("result-searchParams: ", searchParams);
-  const resultCode = searchParams.get('resultCode'); // Lấy giá trị của 'resultCode' từ query params
-  console.log("result-resultCode: ", resultCode);
-  const orderIdGeted = searchParams.get('orderId');
-  console.log("result-orderIdGeted: ", orderIdGeted);
-  let orderIdNumber = orderIdGeted.substring(2); // Lấy từ vị trí thứ 2 trở đi
+app.get("/api/redirectUrl/success", (req, res) => {
+  console.log("called", req.query)
+  const resultCode = req.query.resultCode;
+  const message = req.query.message;
+  const orderId = req.query.orderId;
+  const requestId = req.query.requestId;
 
-  console.log(orderIdNumber); // Ví dụ orderIdGeted = "MM1714113143666" => orderIdNumber ="1714113143666" (cấu trúc MM + OrderID từ app)
+  console.log("resultCode: ", resultCode);
+  console.log("message: ", message);
+  console.log("orderId: ", orderId);
+  console.log("requestId: ", requestId);
 
-  if(resultCode == 0) {
-    const bookingRef = admin.database().ref("booking");
-    // Sửa trạng thái trên Firebase Realtime Database: Trong node "booking" có id node con là orderIdNumber, hãy sửa "status" = 30 cho node có id orderIdNumber.
-    bookingRef.child(orderIdNumber).update({
-        status: 30
+  // Biến để kiểm tra xem đã gửi phản hồi chưa
+  let responseSent = false;
+
+  // Kiểm tra kết quả của giao dịch
+  if (resultCode == 0) {
+    // Sửa dữ liệu trên Firebase
+    const orderRef = admin.database().ref("booking").child(orderId);
+    orderRef.update({
+        status: 30,
+        transaction: requestId,
     }, (error) => {
         if (error) {
-            // Xử lý lỗi nếu có
-            console.log("Error updating status: ", error);
+            // Xử lý lỗi khi cập nhật dữ liệu
+            console.error("Error updating data:", error);
+            responseSent = true; // Đánh dấu đã gửi phản hồi
+            return res.status(500).send("Error updating data: " + error);
         } else {
-            // Thành công
-            console.log("Status updated successfully.");
+            // Lấy email từ node orderId
+            orderRef.child("email").once("value", (snapshot) => {
+                const email = snapshot.val(); // Lấy giá trị email
+                console.log("Email:======================", email);
+                const userEmail = email;
 
-            // Lấy Email từ mã đơn hàng và gửi thông báo đến admin về đơn hàng mới
-            bookingRef.once('value', (snapshot) => {
-              snapshot.forEach((childSnapshot) => {
-                  // Lấy id của mỗi nút con
-                  const bookingId = childSnapshot.key;
-          
-                  // Kiểm tra xem orderIdNumber trùng với id của nút con không
-                  if (orderIdNumber === bookingId) {
-                      // Nếu trùng, lấy dữ liệu của nút con
-                      const bookingData = childSnapshot.val();
-          
-                      // Kiểm tra xem có tồn tại trường email trong dữ liệu của nút con không
-                      if (bookingData && bookingData.email) {
-                          // Nếu tồn tại, lấy địa chỉ email
-                          const email = bookingData.email;
-          
-                          // Tiếp tục xử lý với địa chỉ email này, ví dụ gửi thông báo đến admin
-                          const adminNotiNewOrderEndpoint = "http://192.168.0.101:3006/api/order_new";
-                          const requestBody = {
-                              userEmail: email,
-                              orderId: orderIdNumber
-                          };
-          
-                          // Gửi yêu cầu POST đến endpoint
-                          axios.post(adminNotiNewOrderEndpoint, requestBody)
-                              .then(response => {
-                                  console.log("Notification sent to admin successfully");
-                              })
-                              .catch(error => {
-                                  console.error("Error sending notification to admin:", error);
-                              });
-                      } else {
-                          console.error("Email not found in booking data");
+                // Gửi thông báo đến admin về đơn hàng mới
+                getAdminTokensFromFirebase()
+                .then(adminTokens => {
+                  adminTokens.forEach(token => {
+                    //Tạo message cho từng target token
+                    const notificationMessage = {
+                      token: token,
+                      notification: {
+                        title: "Đơn hàng mới",
+                        body: "Bạn có đơn hàng mới,\nID " + orderId
+                      },
+                      data: {
+                        typeFor: "1",
+                        email: userEmail,
+                        orderId: orderId
                       }
-          
-                      // Kết thúc vòng lặp nếu đã tìm thấy orderIdNumber trong danh sách booking
-                      return true;
+                    }
+                    console.log("order_new: title = ", notificationMessage.notification.title);
+                    console.log("order_new: body = ", notificationMessage.notification.body);
+                    console.log("order_new: typeFor = ", notificationMessage.data.typeFor);
+                    console.log("order_new: email = ", notificationMessage.data.email);
+                    console.log("order_new: orderId = ", notificationMessage.data.orderId);
+
+                    sendNotification(notificationMessage);
+                  });
+                  // Gửi phản hồi về client khi tất cả các hoạt động đã hoàn tất
+                  if (!responseSent) {
+                    responseSent = true; // Đánh dấu đã gửi phản hồi
+                    // res.status(200).end("Thanh toán thành công!");
+                    res.status(200).sendFile(path.join(__dirname, 'a.html'));
                   }
-              });
-          });
-
-
+                })
+                .catch(error => {
+                  console.error("Error getting admin tokens from Firebase:", error);
+                  if (!responseSent) {
+                    responseSent = true; // Đánh dấu đã gửi phản hồi
+                    res.status(500).json({ error: "Failed to get admin tokens from Firebase" });
+                  }
+                });
+            }, (error) => {
+                // Xử lý lỗi khi không thể lấy được email
+                console.error("Error getting email:", error);
+                if (!responseSent) {
+                  responseSent = true; // Đánh dấu đã gửi phản hồi
+                  // Gửi phản hồi khi không thể lấy được email
+                  res.status(200).json({
+                      message: "RedirectUrl Success",
+                      email: null // Không có email
+                  });
+                }
+            });
         }
     });
+  } else {
+    console.log("Not success", "message: " + message);
+    // Gửi phản hồi về client khi tất cả các hoạt động đã hoàn tất
+    if (!responseSent) {
+      responseSent = true; // Đánh dấu đã gửi phản hồi
+      res.status(200).json({
+          message: "RedirectUrl Success"
+      });
+    }
   }
-  
-  return res.status(200).json({
-      message: "RedirectUrl Success"
-  })
 });
 
 
-app.get("/api/ipnUrl/result", (req, res) => {
+
+app.get("/api/ipnUrl/success", (req, res) => {
   return res.status(200).json({
       message: "IpnUrl Success"
   })
