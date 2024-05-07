@@ -398,6 +398,7 @@ app.post("/api/momo_qr", async (req, res) => {
 // lấy email từ orderId, tự động post cái đơn mới 
 
 app.get("/api/redirectUrl/success", (req, res) => {
+  console.log("======================/api/redirectUrl/success======================")
   console.log("called", req.query)
   const resultCode = req.query.resultCode;
   const message = req.query.message;
@@ -427,10 +428,11 @@ app.get("/api/redirectUrl/success", (req, res) => {
             return res.status(500).send("Error updating data: " + error);
         } else {
             // Lấy email từ node orderId
-            orderRef.child("email").once("value", (snapshot) => {
-                const email = snapshot.val(); // Lấy giá trị email
-                console.log("Email:======================", email);
-                const userEmail = email;
+            orderRef.once("value", (snapshot) => {
+              const data = snapshot.val();
+              if (data) {
+                const email = data.email;
+                console.log("Email:", email);
 
                 // Gửi thông báo đến admin về đơn hàng mới
                 getAdminTokensFromFirebase()
@@ -471,6 +473,10 @@ app.get("/api/redirectUrl/success", (req, res) => {
                     res.status(500).json({ error: "Failed to get admin tokens from Firebase" });
                   }
                 });
+
+              } else {
+                console.log("Không tìm thấy dữ liệu cho nút '1722204538621'");
+              }
             }, (error) => {
                 // Xử lý lỗi khi không thể lấy được email
                 console.error("Error getting email:", error);
