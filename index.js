@@ -105,7 +105,7 @@ app.post("/api/order_accept", function (req, res) {
   const { userEmail, orderId } = req.body;
 
   // Gửi thông báo cho người dùng: đơn hàng đã được chấp nhận
-  getUserTokensFromFirebase()
+  getUserTokensFromFirebase(userEmail)
     .then(userTokens => {
       userTokens.forEach(token => {
         const notificationMessage = {
@@ -142,7 +142,7 @@ app.post("/api/order_refuse", function (req, res) {
   const { userEmail, orderId, reason } = req.body;
 
   // Gửi thông báo cho người dùng: đơn hàng đã bị từ chối
-  getUserTokensFromFirebase()
+  getUserTokensFromFirebase(userEmail)
     .then(userTokens => {
       userTokens.forEach(token => {
         const notificationMessage = {
@@ -184,7 +184,7 @@ app.post("/api/order_send", function (req, res) {
   // cái kia gọi xong ok thì xử lý: post đến cái này để thông báo cho người dùng
 
   // Gửi thông báo cho người dùng: đơn hàng đang được vận chuyển
-  getUserTokensFromFirebase()
+  getUserTokensFromFirebase(userEmail)
     .then(userTokens => {
       userTokens.forEach(token => {
         const notificationMessage = {
@@ -223,11 +223,11 @@ app.post("/api/order_send", function (req, res) {
 // Endpoint cho tài xế post lên ==== CHÚ Ý: chỗ này cần sửa cả "status" trên Realtime Database luôn bằng server này
 // Cái này hiện tại admin đang dùng tạm
 app.post("/api/order_complete", function (req, res) {
-  // Lấy thông tin từ request của admin
+  // Lấy thông tin từ request của admin (Bình thường sẽ là tài xế post lên, đây là đang để admin xài thay tài xế :v)
   const { userEmail, orderId } = req.body;
 
   // Gửi thông báo cho người dùng: đơn hàng đã hoàn thành
-  getUserTokensFromFirebase()
+  getUserTokensFromFirebase(userEmail)
     .then(userTokens => {
       userTokens.forEach(token => {
         const notificationMessage = {
@@ -267,17 +267,17 @@ app.post("/api/order_complete", function (req, res) {
 //   const { orderId, userEmail, reason } = req.body;
 
 //   // Gửi thông báo cho người dùng về việc đơn hàng không hoàn thành
-//   getUserTokensFromFirebase()
+//   getUserTokensFromFirebase(userEmail)
 //     .then(userTokens => {
 //       userTokens.forEach(token => {
-//         // sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} của bạn không hoàn thành. Lý do: ${reason}. \nLiên hệ cửa hàng ở phần Liên hệ nếu cần được giải quyết`);
+//         // sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} của bạn không hoàn thành.`);
 //         sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng của bạn không hoàn thành`);
 //       });
 //       // Gửi thông báo cho admin về việc đơn hàng không hoàn thành
 //       getAdminTokensFromFirebase()
 //         .then(adminTokens => {
 //           adminTokens.forEach(token => {
-//             // sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} đã không hoàn thành bởi ${userEmail}. Reason: ${reason}`);
+//             // sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} đã không hoàn thành.`);
 //             sendNotification(token, "Đơn hàng không hoàn thành", `Có 1 đơn hàng đã không hoàn thành`);
 //           });
 //           res.status(200).json({ message: "Notifications sent to user and admin successfully" });
@@ -326,25 +326,32 @@ function getAdminTokensFromFirebase() {
   });
 }
 
-function getUserTokensFromFirebase() {
+function getUserTokensFromFirebase(userEmail) {
   return new Promise((resolve, reject) => {
     const userTokens = [];
+    let isFoundUser = false; // Biến boolean để kiểm tra xem đã tìm thấy người dùng cần thiết hay không
     const usersRef = admin.database().ref("user");
     usersRef.once("value", (snapshot) => {
       snapshot.forEach((userSnapshot) => {
         const userData = userSnapshot.val();
-        if (userData.type === 2 && userData.fcmtoken) {
+        if (userData.email === userEmail &&  userData.type === 2 && userData.fcmtoken) {
+          isFoundUser = true; // Đánh dấu là đã tìm thấy người dùng cần thiết
           Object.values(userData.fcmtoken).forEach((token) => {
             userTokens.push(token);
           });
         }
       });
-      console.log("Số phần tử trong userTokens:", userTokens.length);
-      console.log(userTokens);
-      resolve(userTokens);
+      if (isFoundUser) {
+        console.log("Số phần tử trong userTokens:", userTokens.length);
+        console.log(userTokens);
+        resolve(userTokens);
+      } else {
+        reject(new Error("User not found")); // Nếu không tìm thấy người dùng cần thiết, reject Promise với lỗi "User not found"
+      }
     });
   });
 }
+
 
 app.get("/success", (req, res) => {
   return res.status(200).json({
