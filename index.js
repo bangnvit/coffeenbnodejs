@@ -486,7 +486,7 @@ app.get("/api/redirectUrl/success", (req, res) => {
                   if (!responseSent) {
                     responseSent = true; // Đánh dấu đã gửi phản hồi
                     // res.status(200).end("Thanh toán thành công!");
-                    res.status(200).sendFile(path.join(__dirname, 'a.html'));
+                    res.status(200).sendFile(path.join(__dirname, 'success_page.html'));
                   }
                 })
                 .catch(error => {
@@ -498,7 +498,7 @@ app.get("/api/redirectUrl/success", (req, res) => {
                 });
 
               } else {
-                console.log("Không tìm thấy dữ liệu cho nút '1722204538621'");
+                console.log("Không tìm thấy dữ liệu cho nút '1722204......'.");
               }
             }, (error) => {
                 // Xử lý lỗi khi không thể lấy được email
@@ -530,7 +530,7 @@ app.get("/api/redirectUrl/success", (req, res) => {
 
 // Test HTML: OK
 app.get("/test_html", (req, res) => {
-  res.status(200).sendFile(path.join(__dirname, 'a.html'));
+  res.status(200).sendFile(path.join(__dirname, 'success_page.html'));
 });
 
 
