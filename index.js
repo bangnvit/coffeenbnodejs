@@ -207,7 +207,8 @@ app.post("/api/order_send", function (req, res) {
 
         sendNotification(notificationMessage);
       });
-      res.status(200).json({ message: "Notifications sent to user and driver successfully" });
+      // res.status(200).json({ message: "Notifications sent to user and driver successfully" });
+      res.status(200).json({ message: "Notifications sent to user (and driver) successfully" });
     })
     .catch(error => {
       console.error("Error getting user tokens from Firebase:", error);
@@ -215,37 +216,51 @@ app.post("/api/order_send", function (req, res) {
     });
 });
 
-// // Endpoint cho tài xế post lên ==== CHÚ Ý: chỗ này cần sửa cả "status" trên Realtime Database luôn bằng server này
-// app.post("/api/order_complete", function (req, res) {
-//   // Lấy thông tin từ request của tài xế
-//   const { orderId, driverEmail } = req.body;
 
-//   // Gửi thông báo cho người dùng về việc đơn hàng đã hoàn thành
-//   getUserTokensFromFirebase()
-//     .then(userTokens => {
-//       userTokens.forEach(token => {
-//         // sendNotification(token, "Đơn hàng đã hoàn thành", `Đơn hàng ${orderId} đã hoàn thành`);
-//         sendNotification(token, "Đơn hàng đã hoàn thành", `Đơn hàng đã hoàn thành`);
-//       });
-//       // Gửi thông báo cho admin về việc đơn hàng đã hoàn thành
-//       getAdminTokensFromFirebase()
-//         .then(adminTokens => {
-//           adminTokens.forEach(token => {
-//             // sendNotification(token, "Đơn hàng đã hoàn thành", `Đơn hàng ${orderId} đã hoàn thành bởi tài xế ${driverEmail}`);
-//             sendNotification(token, "Đơn hàng đã hoàn thành", `Đơn hàng đã hoàn thành`);
-//           });
-//           res.status(200).json({ message: "Notifications sent to user and admin successfully" });
-//         })
-//         .catch(error => {
-//           console.error("Error getting admin tokens from Firebase:", error);
-//           res.status(500).json({ error: "Failed to get admin tokens from Firebase" });
-//         });
-//     })
-//     .catch(error => {
-//       console.error("Error getting user tokens from Firebase:", error);
-//       res.status(500).json({ error: "Failed to get user tokens from Firebase" });
-//     });
-// });
+
+
+
+// Endpoint cho tài xế post lên ==== CHÚ Ý: chỗ này cần sửa cả "status" trên Realtime Database luôn bằng server này
+// Cái này hiện tại admin đang dùng tạm
+app.post("/api/order_complete", function (req, res) {
+  // Lấy thông tin từ request của admin
+  const { userEmail, orderId } = req.body;
+
+  // Gửi thông báo cho người dùng: đơn hàng đã hoàn thành
+  getUserTokensFromFirebase()
+    .then(userTokens => {
+      userTokens.forEach(token => {
+        const notificationMessage = {
+          token: token,
+          notification: {
+            title: "Đơn hàng đã hoàn thành",
+            body: "Đơn hàng ID " + orderId + " đã hoàn thành."
+          },
+          data: {
+            typeFor: "2",
+            email: userEmail,
+            orderId: orderId
+          }
+        }
+        console.log("order_complete: title = ", notificationMessage.notification.title);
+        console.log("order_complete: body = ", notificationMessage.notification.body);
+        console.log("order_complete: typeFor = ", notificationMessage.data.typeFor);
+        console.log("order_complete: email = ", notificationMessage.data.email);
+        console.log("order_complete: orderId = ", notificationMessage.data.orderId);
+
+        sendNotification(notificationMessage);
+      });
+      res.status(200).json({ message: "Notifications sent to user successfully" });
+    })
+    .catch(error => {
+      console.error("Error getting user tokens from Firebase:", error);
+      res.status(500).json({ error: "Failed to get user tokens from Firebase" });
+    });
+});
+
+
+
+
 
 // app.post("/api/order_notcomplete", function (req, res) {
 //   // Lấy thông tin từ request của tài xế
