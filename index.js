@@ -6,12 +6,13 @@ const url = require('url');
 const querystring = require('querystring');
 const crypto = require('crypto');
 const axios = require('axios');
+const path = require('path'); // Import module path
 const port = 3006;
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-
+app.use(express.static(path.join(__dirname, 'public')));
 
 const serviceAccount = require(process.env.GOOGLE_APPLICATION_CREDENTIALS);
 
@@ -271,14 +272,14 @@ app.post("/api/order_complete", function (req, res) {
 //     .then(userTokens => {
 //       userTokens.forEach(token => {
 //         // sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} của bạn không hoàn thành.`);
-//         sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng của bạn không hoàn thành`);
+//         sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} của bạn không hoàn thành.`);
 //       });
 //       // Gửi thông báo cho admin về việc đơn hàng không hoàn thành
 //       getAdminTokensFromFirebase()
 //         .then(adminTokens => {
 //           adminTokens.forEach(token => {
 //             // sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} đã không hoàn thành.`);
-//             sendNotification(token, "Đơn hàng không hoàn thành", `Có 1 đơn hàng đã không hoàn thành`);
+//             sendNotification(token, "Đơn hàng không hoàn thành", `Đơn hàng ID ${orderId} đã không hoàn thành.`);
 //           });
 //           res.status(200).json({ message: "Notifications sent to user and admin successfully" });
 //         })
@@ -359,7 +360,7 @@ app.get("/success", (req, res) => {
   })
 })
 
-// Testing...
+// OK
 app.post("/api/momo_qr", async (req, res) => {
 
   console.log("================momo_qr=================")
@@ -525,6 +526,12 @@ app.get("/api/redirectUrl/success", (req, res) => {
   }
 });
 
+
+
+// Test HTML: OK
+app.get("/test_html", (req, res) => {
+  res.status(200).sendFile(path.join(__dirname, 'a.html'));
+});
 
 
 app.get("/api/ipnUrl/success", (req, res) => {

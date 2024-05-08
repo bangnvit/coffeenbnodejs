@@ -15,25 +15,40 @@
             height: 100vh;
             background-color: #f0f0f0;
         }
+        .container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* margin-top: 15%; */
+        }
+        .logo-image {
+            width: 256px;
+            height: 256px;
+            background-image: url('img_logo_256.png');
+            background-size: cover;
+            margin-bottom: 40px;
+        }
         .success-image {
             width: 128px;
             height: 128px;
             background-image: url('ic_success.png');
             background-size: cover;
-            position: absolute;
-            top: 25%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            margin-bottom: 20px;
         }
         .success-message {
             text-align: center;
-            margin-top: 30px;
             font-size: 24px;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
-    <div class="success-image"></div>
-    <div class="success-message">Thanh toán thành công!</div>
+    <div class="container">
+        <div class="logo-image" style="background-image: url('/img_logo_256.png');"></div>
+        <div class="success-image" style="background-image: url('/ic_success.png');"></div>
+        <div class="success-message">Thanh toán thành công!</div>
+    </div>
 </body>
 </html>
